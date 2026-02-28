@@ -1,11 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Depends
+from typing import Annotated
+from test import  QueryParams
 
 app = FastAPI()
 
 
-@app.get("/{id}")
-def root(id:int):
-    return {"message":f"hello what are you doing {id} "}
+@app.get("/")
+def root(query: Annotated[QueryParams, Depends()]):
+    return {"message":f"hello what are you doing", "params":query}
 
 @app.post("/todo")
 def create_todo(item:dict):
