@@ -4,6 +4,7 @@ import fastapi
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from app.routing import todo
+from app.config.app_config import get_app_config, AppConfig
 
 app = FastAPI()
 
@@ -11,7 +12,13 @@ app.include_router(todo.router) # include the router from todo.py
 
 @app.get("/")
 def root():
-    return {"message":f"hello what are you doing"}
+    config=get_app_config()
+    return {
+        "message":"what are you doing",
+        "app_name":config.app_name,
+        "app_env":config.app_env,
+        "database_url":config.database_url
+    }
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
