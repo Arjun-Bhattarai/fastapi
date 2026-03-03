@@ -1,1 +1,1 @@
-from app.database.db import engine
+from app.database.db import engine, get_db

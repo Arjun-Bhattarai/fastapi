@@ -21,7 +21,7 @@ if config.config_file_name is not None:
 
 # Import your Base and models
 from app.database.db import Base
-from app.database.schema import *  # make sure schema/__init__.py uses relative imports
+from app.models.todo import TodoSchema
 target_metadata = Base.metadata
 
 # Get DATABASE_URL from .env
