@@ -1,21 +1,37 @@
-from fastapi import FastAPI
-from sqlalchemy import text
-from app.database import engine
-from app.routes.todo import router   
+from fastapi import FastAPI,Depends
+from typing import Annotated
+import fastapi
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from app.routes import todo,auth
+from app.config.app_config import get_app_config, AppConfig
 
 app = FastAPI()
 
-app.include_router(router) 
+app.include_router(todo.router,prefix="/api/v1/todo") # include the router from todo.py
+app.include_router(auth.router,prefix="/api/v1/auth") # include the router from auth.py
 
 @app.get("/")
-def home():
-    return {"message": "API is running"}
+def root():
+    config=get_app_config()
+    return {
+        "message":"what are you doing",
+        "app_name":config.app_name,
+        "app_env":config.app_env,
+        "database_url":config.database_url
+    }
 
-@app.get("/test-db")
-def test_db():
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1"))
-            return {"status": "connected", "result": result.scalar()}
-    except Exception as e:
-        return {"status": "error", "details": str(e)}
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    errors={}
+    for error in exc.errors():
+        print(f"the error is: {error}")
+        errors[error["loc"][-1]] = error["msg"]
+
+    return JSONResponse(status_code=422, content={"message":"validation error", "errors":errors})
+
+
+"""@app.post("/todo")
+def create_todo(item:dict):
+    return {"message":"todo created ", "items":item}"""
+

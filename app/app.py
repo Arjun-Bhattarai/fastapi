@@ -3,12 +3,13 @@ from typing import Annotated
 import fastapi
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from app.routing import todo
+from app.routes import todo,auth
 from app.config.app_config import get_app_config, AppConfig
 
 app = FastAPI()
 
-app.include_router(todo.router) # include the router from todo.py
+app.include_router(todo.router,prefix="/api/v1/todo") # include the router from todo.py
+app.include_router(auth.router,prefix="/api/v1/auth") # include the router from auth.py
 
 @app.get("/")
 def root():

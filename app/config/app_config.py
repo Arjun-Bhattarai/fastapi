@@ -13,6 +13,9 @@ class AppConfig(BaseSettings):
     app_name: str = "FastAPI"
     app_env: str = "development"
     database_url: str
+    secret_key: str
+    ALGORITHM:str
+    ACCESS_TOKEN_EXPIRE_MINUTES:int
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env")
 
