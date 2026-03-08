@@ -30,7 +30,7 @@ async def create_book(book: Book):
     }
 
 
-@app.get("/get_header")
+@app.get("/get_header",status_code=200)
 async def get_header(
     accept: str = Header("None"),
     content_type: str = Header("None"),
