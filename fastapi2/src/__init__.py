@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from src.books.routs import router 
 from contextlib import asynccontextmanager
+from src.db.main import init_db
 
 @asynccontextmanager  
-def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):
     print("Starting up...")
+    await init_db()
     yield # yield statement le startup code ra shutdown code bich ko execution lai separate garxa
     print("Shutting down...")
 
