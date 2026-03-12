@@ -8,11 +8,11 @@ class Books(SQLModel,table=True):
     title: str
     author: str
     publisher: str
-    publish_date: str
+    publish_date: datetime
     page_count: int
     language: str
-    create_at:datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    update_at:datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
+    created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
+    updated_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
 
 def __repr__(self) -> str:
     return f"Books( title={self.title})"
