@@ -16,7 +16,7 @@ class BookService:
         return result.first()
 
     async def create_book(self, book_data: BookCreate, session: AsyncSession):
-        new_book = Books(**book_data.model_dump())#**book_data.model_dump() le BookCreate instance lai dictionary ma convert garxa, ra ** le dictionary ko key-value pairs lai unpack garxa
+        new_book = Books(**book_data.model_dump())
         session.add(new_book)
         await session.commit()
         await session.refresh(new_book)
@@ -25,12 +25,12 @@ class BookService:
     async def update_book(self, book_id: int, book_data: BookUpdate, session: AsyncSession):
         statement = select(Books).where(Books.uid == book_id)
         result = await session.exec(statement)
-        book = result.first() 
+        book = result.first()
 
         if book is None:
             return None
 
-        for key, value in book_data.model_dump(exclude_unset=True).items():#book_data.model_dump(exclude_unset=True) le BookUpdate instance lai dictionary ma convert garxa, ra exclude_unset=True le unset fields lai exclude garxa, items() le dictionary ko key-value pairs return garxa
+        for key, value in book_data.model_dump(exclude_unset=True).items():
             setattr(book, key, value)
 
         await session.commit()
@@ -39,8 +39,8 @@ class BookService:
 
     async def delete_book(self, book_id: int, session: AsyncSession):
         statement = select(Books).where(Books.uid == book_id)
-        result = await session.exec(statement)  #select statement le Books table ma book_id sanga match hune record haru select garxa, where clause le condition specify garxa
-        book = result.first()  #first() le result set ko pahilo record return garxa, jasma book_id match hunxa
+        result = await session.exec(statement)
+        book = result.first()
 
         if book is None:
             return None

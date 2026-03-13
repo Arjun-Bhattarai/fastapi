@@ -1,17 +1,23 @@
-from fastapi import FastAPI, APIRouter, status, HTTPException
-from src.books.book_data import books
-from src.books.schemas import Books, BookUpdate  # <- Use BookUpdate
+from fastapi import APIRouter, status, HTTPException, Depends
+from sqlmodel.ext.asyncio.session import AsyncSession
+from src.books.schemas import Books, BookUpdate
 from typing import List
+from src.db.main import get_session
+from src.books.service import BookService
 
 router = APIRouter()
+book_service = BookService()
 
-@router.get("/", response_model=List[Books])
-async def get_books():
+
+@router.get("/", response_model=List[Books])#response_model le API response lai List[Books] type ma convert garxa
+async def get_books(session: AsyncSession = Depends(get_session)):
+    books = await book_service.get_all_books(session)
     return books
 
+
 @router.get("/{book_id}")
-async def get_book(book_id: int):
-    book = next((book for book in books if book["id"] == book_id), None)
+async def get_book_by_id(book_id: int, session: AsyncSession = Depends(get_session)):
+    book = await book_service.get_book(book_id, session)
 
     if book is None:
         raise HTTPException(
@@ -20,38 +26,35 @@ async def get_book(book_id: int):
 
     return {"book": book}
 
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_book(book: Books):
-    new_book = book.model_dump()
-    books.append(new_book)
+async def create_book(book: Books, session: AsyncSession = Depends(get_session)):#Depends(get_session) le get_session function lai call garxa ra AsyncSession object provide garxa
+    new_book = await book_service.create_book(book, session)
 
     return {"message": "Book created successfully", "book": new_book}
 
+
 @router.put("/{book_id}")
-async def update_book(book_id: int, book: BookUpdate):  # <- Use BookUpdate
+async def update_book(
+    book_id: int, book: BookUpdate, session: AsyncSession = Depends(get_session)
+):
+    updated_book = await book_service.update_book(book_id, book, session)
 
-    for index, existing_book in enumerate(books):
+    if not updated_book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
+        )
 
-        if existing_book["id"] == book_id:
+    return {"message": "Book updated successfully", "book": updated_book}
 
-            updated_book = book.model_dump()
-            updated_book["id"] = book_id
-            updated_book["publish_date"] = existing_book["publish_date"]
-
-            books[index] = updated_book
-
-            return {"message": "Book updated successfully", "book": updated_book}
-
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
 @router.delete("/{book_id}")
-async def delete_book(book_id: int):
+async def delete_book(book_id: int, session: AsyncSession = Depends(get_session)):
+    deleted = await book_service.delete_book(book_id, session)
 
-    for index, existing_book in enumerate(books):
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Book not found"
+        )
 
-        if existing_book["id"] == book_id:
-            del books[index]
-
-            return {"message": "Book deleted successfully"}
-
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
+    return {"message": "Book deleted successfully"}
