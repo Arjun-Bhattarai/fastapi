@@ -37,7 +37,7 @@ class BookService:
             return None
         for key, value in book_data.model_dump(exclude_unset=True).items():
             if isinstance(value, datetime):
-                value = to_naive_utc(value)  # ← safety net
+                value = to_naive_utc(value)  
             setattr(book, key, value)
         book.update_at = datetime.utcnow()
         session.add(book)
