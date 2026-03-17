@@ -1,6 +1,6 @@
 # FastAPI Todo API
 
-A REST API built with FastAPI and PostgreSQL for managing todo items.
+A REST API built with FastAPI and PostgreSQL for managing todo items
 
 ## Tech Stack
 
