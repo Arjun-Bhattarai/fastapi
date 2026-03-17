@@ -19,4 +19,4 @@ app = FastAPI(
     version=version,
 )
 app.include_router(router, prefix=f"/api/{version}/books", tags=["Books"])
-app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["Auth"])
+app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["Auth"])#yo auth_router lai /api/v1/auth prefix ma include garxa, jaha v1 version ho. Tags le API documentation ma endpoints lai categorize garna madad garcha.
