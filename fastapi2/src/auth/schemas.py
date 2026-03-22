@@ -22,4 +22,8 @@ class user_model(BaseModel):
     is_verified: bool = Field(default=False)
     create_at: datetime
     update_at: datetime
-    password: str = Field(exclude=True)
+    password: str = Field(exclude=True)#yo password field lai response ma exclude garna use garincha, jaba user_model response ma return huncha, password field return hudaina.
+
+class UserLogin(BaseModel):
+    email: str = Field(max_length=100)
+    password: str = Field(min_length=5)

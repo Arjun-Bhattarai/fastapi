@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     #APP_NAME: str
     #APP_ENV: str
     DATABASE_URL: str
-    #secret_key: str
-    #ALGORITHM: str
+    JWT_SECRET: str
+    JWT_ALGORITHM: str
     #ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     model_config = SettingsConfigDict(
