@@ -13,6 +13,7 @@ user_service = AuthService()
 refresh_token_expires_delta = 3600 * 24 * 7  
 
 
+
 @auth_router.post(
     "/signup", response_model=user_model, status_code=status.HTTP_201_CREATED
 )
