@@ -11,25 +11,32 @@ class AccessToken(HTTPBearer):
 
     async def __call__(
         self, request: Request
-    ) -> HTTPAuthorizationCredentials | None:
+    ) -> dict | None:
         credentials: HTTPAuthorizationCredentials | None = await super().__call__(request)
-        token = credentials.credentials
-        token_data = decode_access_token(token)
+        token_data = decode_access_token(credentials.credentials)
 
-        if token_data is None: 
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired token",
-            )
+        self.verify_token_data(token_data)  # yo method le token data verify garne logic handle garxa, jaba token decode hunxa. Yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa.
 
-        if token_data.get('refresh_token'): 
+        return token_data  # ✓ credentials ko satta token_data return garne
+
+
+    def verify_token_data(self, token_data: dict) -> None: #yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa. Yo method le token data verify garne logic handle garxa, jaba token decode hunxa.
+        raise NotImplementedError("Subclasses must implement verify_token_data method")
+
+
+class AccessTokenBearer(AccessToken):
+    def verify_token_data(self, token_data: dict) -> None:
+        if token_data and token_data.get('refresh'):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Please provide an access token",
             )
 
-        return credentials
 
-    async def verify_token(self, token: str) -> bool:
-        token_data = decode_access_token(token)
-        return token_data is not None  
+class RefreshTokenBearer(AccessToken):
+    def verify_token_data(self, token_data: dict) -> None:
+        if token_data and not token_data.get('refresh'):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Please provide a refresh token",
+            )

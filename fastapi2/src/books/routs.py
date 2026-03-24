@@ -5,11 +5,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
 from src.books.service import BookService
 from typing import List
-from src.auth.dependency import AccessToken
+from src.auth.dependency import AccessTokenBearer  
 
 router = APIRouter()
 book_service = BookService()
-access_token = AccessToken()
+access_token = AccessTokenBearer()   
 
 @router.get("/", response_model=List[BookRead])
 async def get_books(session: AsyncSession = Depends(get_session), user: dict = Depends(access_token)):
@@ -36,7 +36,7 @@ async def update_book(book_id: UUID, book: BookUpdate, session: AsyncSession = D
     return updated_book
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_book(book_id: UUID, session: AsyncSession = Depends(get_session), user: dict = Depends(access_token)):  # ✅ Added auth
+async def delete_book(book_id: UUID, session: AsyncSession = Depends(get_session), user: dict = Depends(access_token)):
     deleted = await book_service.delete_book(book_id, session)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")

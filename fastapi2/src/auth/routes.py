@@ -3,9 +3,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from .schemas import UserCreate, user_model, UserLogin
 from .service import AuthService
 from src.db.main import get_session
-from .utils import create_access_token, decode_access_token, verify_password
-from datetime import datetime, timedelta, timezone
+from .utils import create_access_token, verify_password
 from fastapi.responses import JSONResponse
+from .dependency import RefreshTokenBearer
 
 auth_router = APIRouter()
 user_service = AuthService()
@@ -73,5 +73,24 @@ async def login_users(user: UserLogin, session: AsyncSession = Depends(get_sessi
                 "email": db_user.email,
                 "username": db_user.username,
             },
+        }
+    )
+
+
+@auth_router.get("/refresh")
+async def refresh_token(credentials = Depends(RefreshTokenBearer()), session: AsyncSession = Depends(get_session)):
+    token_data = credentials  # credentials bata token data fetch garne
+
+    new_access_token = create_access_token(
+        data={
+            "email": token_data.get("email"),
+            "username": token_data.get("username"),
+        }
+    )
+
+    return JSONResponse(
+        content={
+            "message": "Token refreshed successfully",
+            "access_token": new_access_token,
         }
     )
