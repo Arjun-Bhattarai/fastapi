@@ -5,8 +5,9 @@ from .service import AuthService
 from src.db.main import get_session
 from .utils import create_access_token, verify_password
 from fastapi.responses import JSONResponse
-from .dependency import RefreshTokenBearer
-
+from .dependency import RefreshTokenBearer, AccessTokenBearer
+from datetime import datetime, timedelta, timezone
+from src.db.redis import add_jti_to_blocklist
 auth_router = APIRouter()
 user_service = AuthService()
 
@@ -77,20 +78,25 @@ async def login_users(user: UserLogin, session: AsyncSession = Depends(get_sessi
     )
 
 
-@auth_router.get("/refresh")
+@auth_router.get("/refresh") #yo endpoint le refresh token lai access token ma convert garne, jaba access token expire bhayepachi naya access token lina use garxa. Yo endpoint ma refresh token provide garna parxa, tyo refresh token valid xa ki nai check garne, ani valid bhaye naya access token create garne.
 async def refresh_token(credentials = Depends(RefreshTokenBearer()), session: AsyncSession = Depends(get_session)):
-    token_data = credentials  # credentials bata token data fetch garne
+    expiry_timestamp = credentials.get("exp")
+    
+    if datetime.fromtimestamp(expiry_timestamp, tz=timezone.utc) > datetime.now(timezone.utc):
+        new_access_token = create_access_token(
+            data={"email": credentials.get("email"), "username": credentials.get("username")}
+        )
+        return JSONResponse(
+            content={
+                "message": "Token refreshed successfully",
+                "access_token": new_access_token,
+            }
+        )
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token has expired")
 
-    new_access_token = create_access_token(
-        data={
-            "email": token_data.get("email"),
-            "username": token_data.get("username"),
-        }
-    )
 
-    return JSONResponse(
-        content={
-            "message": "Token refreshed successfully",
-            "access_token": new_access_token,
-        }
-    )
+@auth_router.post("/logout")
+async def revoke_token(credentials = Depends(AccessTokenBearer())):
+    jti= credentials.get("jti")
+    await add_jti_to_blocklist(jti)
+    return JSONResponse(content={"message": "Logout successful, token revoked"}, status_code=status.HTTP_200_OK)

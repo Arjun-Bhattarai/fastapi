@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 from .utils import decode_access_token
 from fastapi.exceptions import HTTPException
-
+from src.db.redis import token_in_blocklist
 
 class AccessToken(HTTPBearer):
     def __init__(self, auto_error: bool = True):
@@ -15,10 +15,16 @@ class AccessToken(HTTPBearer):
         credentials: HTTPAuthorizationCredentials | None = await super().__call__(request)
         token_data = decode_access_token(credentials.credentials)
 
+        if await token_in_blocklist(token_data.get("jti")):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token is blacklisted",
+                solution="Please log in again to obtain a new token",
+            )
+
         self.verify_token_data(token_data)  # yo method le token data verify garne logic handle garxa, jaba token decode hunxa. Yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa.
 
-        return token_data  # ✓ credentials ko satta token_data return garne
-
+        return token_data 
 
     def verify_token_data(self, token_data: dict) -> None: #yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa. Yo method le token data verify garne logic handle garxa, jaba token decode hunxa.
         raise NotImplementedError("Subclasses must implement verify_token_data method")
