@@ -1,18 +1,23 @@
-from fastapi import Request, status
+from fastapi import Depends, Request, status
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 from .utils import decode_access_token
 from fastapi.exceptions import HTTPException
 from src.db.redis import token_in_blocklist
+from src.db.main import get_session
+from sqlmodel.ext.asyncio.session import AsyncSession
+from .service import user_service
+
+user_service=user_service()
 
 class AccessToken(HTTPBearer):
     def __init__(self, auto_error: bool = True):
         super().__init__(auto_error=auto_error)
 
-    async def __call__(
-        self, request: Request
-    ) -> dict | None:
-        credentials: HTTPAuthorizationCredentials | None = await super().__call__(request)
+    async def __call__(self, request: Request) -> dict | None:
+        credentials: HTTPAuthorizationCredentials | None = await super().__call__(
+            request
+        )
         token_data = decode_access_token(credentials.credentials)
 
         if await token_in_blocklist(token_data.get("jti")):
@@ -22,17 +27,23 @@ class AccessToken(HTTPBearer):
                 solution="Please log in again to obtain a new token",
             )
 
-        self.verify_token_data(token_data)  # yo method le token data verify garne logic handle garxa, jaba token decode hunxa. Yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa.
+        self.verify_token_data(
+            token_data
+        )  # yo method le token data verify garne logic handle garxa, jaba token decode hunxa. Yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa.
 
-        return token_data 
+        return token_data
 
-    def verify_token_data(self, token_data: dict) -> None: #yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa. Yo method le token data verify garne logic handle garxa, jaba token decode hunxa.
+    def verify_token_data(
+        self, token_data: dict
+    ) -> (
+        None
+    ):  # yo method lai AccessToken class ma define garna parxa, tara implementation AccessTokenBearer ra RefreshTokenBearer ma hunxa. Yo method le token data verify garne logic handle garxa, jaba token decode hunxa.
         raise NotImplementedError("Subclasses must implement verify_token_data method")
 
 
 class AccessTokenBearer(AccessToken):
     def verify_token_data(self, token_data: dict) -> None:
-        if token_data and token_data.get('refresh'):
+        if token_data and token_data.get("refresh"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Please provide an access token",
@@ -41,8 +52,18 @@ class AccessTokenBearer(AccessToken):
 
 class RefreshTokenBearer(AccessToken):
     def verify_token_data(self, token_data: dict) -> None:
-        if token_data and not token_data.get('refresh'):
+        if token_data and not token_data.get("refresh"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Please provide a refresh token",
             )
+
+
+async def get_current_user(
+    token_data: dict = Depends(AccessTokenBearer()),
+    db: AsyncSession = Depends(get_session),
+) -> (
+    dict
+):  # yo function le current user ko data return garxa, jaba user request garcha. Yo function ma AccessTokenBearer dependency use garna parxa, jaba user request garcha, tyo bela token decode hunxa, token blocklist ma xa ki xaina check hunxa, token data verify hunxa, ani token data return hunxa. Yo function lai route handler ma use garna parxa, jaba user request garcha.
+    user_email = token_data["user"]["email"]
+    user=await user_service.get_user_by_email(user_email, db)
