@@ -28,7 +28,7 @@ fastapi/
     ├── database/
     │   └── db.py         # DB connection and session
     ├── models/
-    │   └── todo.py       # SQLAlchemy and Pydantic models
+    │   └── todo.py       # SQLAlchemy/Pydantic models
     └── routes/
         └── todo.py       # Todo endpoints
 ```
