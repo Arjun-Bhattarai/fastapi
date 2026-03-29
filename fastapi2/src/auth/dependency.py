@@ -6,9 +6,9 @@ from fastapi.exceptions import HTTPException
 from src.db.redis import token_in_blocklist
 from src.db.main import get_session
 from sqlmodel.ext.asyncio.session import AsyncSession
-from .service import user_service
+from .service import AuthService
 
-user_service=user_service()
+user_service=AuthService()
 
 class AccessToken(HTTPBearer):
     def __init__(self, auto_error: bool = True):
@@ -24,7 +24,6 @@ class AccessToken(HTTPBearer):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token is blacklisted",
-                solution="Please log in again to obtain a new token",
             )
 
         self.verify_token_data(
@@ -65,5 +64,6 @@ async def get_current_user(
 ) -> (
     dict
 ):  # yo function le current user ko data return garxa, jaba user request garcha. Yo function ma AccessTokenBearer dependency use garna parxa, jaba user request garcha, tyo bela token decode hunxa, token blocklist ma xa ki xaina check hunxa, token data verify hunxa, ani token data return hunxa. Yo function lai route handler ma use garna parxa, jaba user request garcha.
-    user_email = token_data["user"]["email"]
+    user_email = token_data["email"]
     user=await user_service.get_user_by_email(user_email, db)
+    return user

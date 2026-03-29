@@ -5,14 +5,14 @@ from .service import AuthService
 from src.db.main import get_session
 from .utils import create_access_token, verify_password
 from fastapi.responses import JSONResponse
-from .dependency import RefreshTokenBearer, AccessTokenBearer
+from .dependency import RefreshTokenBearer, AccessTokenBearer, get_current_user
 from datetime import datetime, timedelta, timezone
 from src.db.redis import add_jti_to_blocklist
+
 auth_router = APIRouter()
 user_service = AuthService()
 
-refresh_token_expires_delta = 3600 * 24 * 7  
-
+refresh_token_expires_delta = 3600 * 24 * 7
 
 
 @auth_router.post(
@@ -43,24 +43,24 @@ async def login_users(user: UserLogin, session: AsyncSession = Depends(get_sessi
         email, session
     )  # yo function le email ko basis ma user lai database bata fetch garxa, jaba user login garna try garcha, tyo bela email ko basis ma user data fetch hunxa.
 
-    if not db_user: 
+    if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
         )
 
-    password_valid = verify_password(password, db_user.password) 
+    password_valid = verify_password(password, db_user.password)
 
-    if not password_valid: 
+    if not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
         )
 
-    access_token = create_access_token(  
-        data={"email": db_user.email, "username": db_user.username}  
+    access_token = create_access_token(
+        data={"email": db_user.email, "username": db_user.username}
     )
 
     refresh_token = create_access_token(  # refresh token create garne, yo token le access token expire bhayepachi naya access token lina use garxa
-        data={"email": db_user.email, "username": db_user.username},  
+        data={"email": db_user.email, "username": db_user.username},
         expires_delta=refresh_token_expires_delta,
         refresh_token=True,
     )
@@ -78,13 +78,23 @@ async def login_users(user: UserLogin, session: AsyncSession = Depends(get_sessi
     )
 
 
-@auth_router.get("/refresh") #yo endpoint le refresh token lai access token ma convert garne, jaba access token expire bhayepachi naya access token lina use garxa. Yo endpoint ma refresh token provide garna parxa, tyo refresh token valid xa ki nai check garne, ani valid bhaye naya access token create garne.
-async def refresh_token(credentials = Depends(RefreshTokenBearer()), session: AsyncSession = Depends(get_session)):
+@auth_router.get(
+    "/refresh"
+)  # yo endpoint le refresh token lai access token ma convert garne, jaba access token expire bhayepachi naya access token lina use garxa. Yo endpoint ma refresh token provide garna parxa, tyo refresh token valid xa ki nai check garne, ani valid bhaye naya access token create garne.
+async def refresh_token(
+    credentials=Depends(RefreshTokenBearer()),
+    session: AsyncSession = Depends(get_session),
+):
     expiry_timestamp = credentials.get("exp")
-    
-    if datetime.fromtimestamp(expiry_timestamp, tz=timezone.utc) > datetime.now(timezone.utc):
+
+    if datetime.fromtimestamp(expiry_timestamp, tz=timezone.utc) > datetime.now(
+        timezone.utc
+    ):
         new_access_token = create_access_token(
-            data={"email": credentials.get("email"), "username": credentials.get("username")}
+            data={
+                "email": credentials.get("email"),
+                "username": credentials.get("username"),
+            }
         )
         return JSONResponse(
             content={
@@ -92,11 +102,21 @@ async def refresh_token(credentials = Depends(RefreshTokenBearer()), session: As
                 "access_token": new_access_token,
             }
         )
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token has expired")
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token has expired"
+    )
 
 
-@auth_router.post("/logout")
-async def revoke_token(credentials = Depends(AccessTokenBearer())):
-    jti= credentials.get("jti")
+@auth_router.get("/me")
+async def get_current_user(user=Depends(get_current_user)):
+    return user
+
+
+@auth_router.get("/logout")
+async def revoke_token(credentials=Depends(AccessTokenBearer())):
+    jti = credentials.get("jti")
     await add_jti_to_blocklist(jti)
-    return JSONResponse(content={"message": "Logout successful, token revoked"}, status_code=status.HTTP_200_OK)
+    return JSONResponse(
+        content={"message": "Logout successful, token revoked"},
+        status_code=status.HTTP_200_OK,
+    )
