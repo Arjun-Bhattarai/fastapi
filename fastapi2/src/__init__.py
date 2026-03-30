@@ -13,7 +13,6 @@ async def lifespan(app: FastAPI):
 
 version = "v1"
 app = FastAPI(
-    lifespan=lifespan,
     title="Book API",
     description="A simple API for managing books",
     version=version,

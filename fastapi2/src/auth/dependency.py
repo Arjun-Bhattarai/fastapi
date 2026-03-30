@@ -7,8 +7,11 @@ from src.db.redis import token_in_blocklist
 from src.db.main import get_session
 from sqlmodel.ext.asyncio.session import AsyncSession
 from .service import AuthService
+from typing import Any, List
+from .models import User
 
-user_service=AuthService()
+user_service = AuthService()
+
 
 class AccessToken(HTTPBearer):
     def __init__(self, auto_error: bool = True):
@@ -65,5 +68,18 @@ async def get_current_user(
     dict
 ):  # yo function le current user ko data return garxa, jaba user request garcha. Yo function ma AccessTokenBearer dependency use garna parxa, jaba user request garcha, tyo bela token decode hunxa, token blocklist ma xa ki xaina check hunxa, token data verify hunxa, ani token data return hunxa. Yo function lai route handler ma use garna parxa, jaba user request garcha.
     user_email = token_data["email"]
-    user=await user_service.get_user_by_email(user_email, db)
+    user = await user_service.get_user_by_email(user_email, db)
     return user
+
+
+class RoleChecker:
+    def __init__(self, allowed_roles: List[str]) -> None:
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, current_user: User = Depends(get_current_user)) -> Any:
+        if current_user.role in self.allowed_roles:
+            return True
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this resource",
+        )

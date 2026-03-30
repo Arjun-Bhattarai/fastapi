@@ -27,6 +27,7 @@ class AuthService:
         user_data_dict = user_data.model_dump()
 
         user_data_dict["password"] = generate_password_hash(user_data_dict["password"])
+        new_user.role="user"
 
         new_user = User(**user_data_dict)
 

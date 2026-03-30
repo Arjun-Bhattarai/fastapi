@@ -56,11 +56,11 @@ async def login_users(user: UserLogin, session: AsyncSession = Depends(get_sessi
         )
 
     access_token = create_access_token(
-        data={"email": db_user.email, "username": db_user.username}
+        data={"email": db_user.email, "username": db_user.username, "role": db_user.role}
     )
 
     refresh_token = create_access_token(  # refresh token create garne, yo token le access token expire bhayepachi naya access token lina use garxa
-        data={"email": db_user.email, "username": db_user.username},
+        data={"email": db_user.email, "username": db_user.username, "role": db_user.role},
         expires_delta=refresh_token_expires_delta,
         refresh_token=True,
     )
@@ -94,6 +94,7 @@ async def refresh_token(
             data={
                 "email": credentials.get("email"),
                 "username": credentials.get("username"),
+                "role": credentials.get("role"),
             }
         )
         return JSONResponse(
