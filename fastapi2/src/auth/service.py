@@ -1,4 +1,4 @@
-from sqlmodel import select  
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from .models import User
 from .schemas import UserCreate
@@ -21,15 +21,21 @@ class AuthService:
 
     async def user_exists(self, email: str, username: str, session: AsyncSession):
         user = await self.get_user(email, username, session)
-        return user is not None  
+        return user is not None
 
     async def create_user(self, user_data: UserCreate, session: AsyncSession):
         user_data_dict = user_data.model_dump()
 
-        user_data_dict["password"] = generate_password_hash(user_data_dict["password"])
-        new_user.role="user"
+        # Hash password
+        user_data_dict["password"] = generate_password_hash(
+            user_data_dict["password"]
+        )
 
+        # Create user FIRST
         new_user = User(**user_data_dict)
+
+        # Then assign role
+        new_user.role = "user"
 
         session.add(new_user)
         await session.commit()

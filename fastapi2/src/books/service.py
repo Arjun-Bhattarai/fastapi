@@ -17,14 +17,20 @@ class BookService:
     async def get_all_books(self, session: AsyncSession):
         result = await session.exec(select(Books))
         return result.all()
+    
+    async def get_user_books(self, user_id: UUID, session: AsyncSession):
+        result = await session.exec(select(Books).where(Books.user_id == user_id).order_by(Books.create_at.desc()))
+        return result.all()
+
 
     async def get_book(self, book_id: UUID, session: AsyncSession):
         result = await session.exec(select(Books).where(Books.uid == book_id))
         return result.first()
 
-    async def create_book(self, book_data: BookCreate, session: AsyncSession):
+    async def create_book(self, book_data: BookCreate, session: AsyncSession, user_id: UUID = None):
         data = book_data.model_dump()
         data["publish_date"] = to_naive_utc(data["publish_date"])  # ← safety net
+        data["user_id"] = user_id
         book = Books(**data)
         session.add(book)
         await session.commit()

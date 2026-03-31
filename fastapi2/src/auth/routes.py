@@ -5,7 +5,7 @@ from .service import AuthService
 from src.db.main import get_session
 from .utils import create_access_token, verify_password
 from fastapi.responses import JSONResponse
-from .dependency import RefreshTokenBearer, AccessTokenBearer, get_current_user
+from .dependency import RefreshTokenBearer, AccessTokenBearer, get_current_user, RoleChecker
 from datetime import datetime, timedelta, timezone
 from src.db.redis import add_jti_to_blocklist
 
@@ -13,6 +13,7 @@ auth_router = APIRouter()
 user_service = AuthService()
 
 refresh_token_expires_delta = 3600 * 24 * 7
+role_checker = RoleChecker(["admin","user"])
 
 
 @auth_router.post(
@@ -109,7 +110,7 @@ async def refresh_token(
 
 
 @auth_router.get("/me")
-async def get_current_user(user=Depends(get_current_user)):
+async def get_current_user(user=Depends(get_current_user), _:bool=Depends(role_checker)):
     return user
 
 
