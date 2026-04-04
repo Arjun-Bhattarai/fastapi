@@ -61,7 +61,7 @@ async def create_book(
     return await book_service.create_book(book, session, user_id=user_id)
 
 
-@router.put("/{book_id}", response_model=BookRead)
+@router.patch("/{book_id}", response_model=BookRead)
 async def update_book(
     book_id: UUID,
     book: BookUpdate,
