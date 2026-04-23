@@ -50,18 +50,29 @@ class RefreshTokenBearer(AccessToken):
             )
 
 
-# ✅ FIXED: use UID instead of email
+from uuid import UUID
+from fastapi import Depends, HTTPException, status
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 async def get_current_user(
     token_data: dict = Depends(AccessTokenBearer()),
     db: AsyncSession = Depends(get_session),
 ) -> User:
 
-    user_id = token_data.get("uid")
+    uid = token_data.get("uid")
 
-    if not user_id:
+    if not uid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="UID missing in token",
+        )
+
+    try:
+        user_id = UUID(uid)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid UID format",
         )
 
     user = await user_service.get_user_by_id(user_id, db)
@@ -74,7 +85,6 @@ async def get_current_user(
 
     return user
 
-
 class RoleChecker:
     def __init__(self, allowed_roles: List[str]) -> None:
         self.allowed_roles = allowed_roles
@@ -83,6 +93,6 @@ class RoleChecker:
         if current_user.role not in self.allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to access this resource",
+                detail="You do not have permission",
             )
         return True

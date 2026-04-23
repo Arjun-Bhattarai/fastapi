@@ -11,50 +11,79 @@ def to_naive_utc(dt: datetime) -> datetime:
         return dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
 
-
+#6:58
 class BookService:
 
     async def get_all_books(self, session: AsyncSession):
         result = await session.exec(select(Books))
         return result.all()
-    
+
     async def get_user_books(self, user_id: UUID, session: AsyncSession):
-        result = await session.exec(select(Books).where(Books.user_id == user_id).order_by(Books.create_at.desc()))
+        result = await session.exec(
+            select(Books)
+            .where(Books.user_id == user_id)
+            .order_by(Books.create_at.desc())
+        )
         return result.all()
 
-
     async def get_book(self, book_id: UUID, session: AsyncSession):
-        result = await session.exec(select(Books).where(Books.uid == book_id))
+        result = await session.exec(
+            select(Books).where(Books.uid == book_id)
+        )
         return result.first()
 
-    async def create_book(self, book_data: BookCreate, session: AsyncSession, user_id: UUID = None):
+  
+    async def create_book(
+        self,
+        book_data: BookCreate,
+        session: AsyncSession,
+        user_id: UUID = None
+    ):
+        print("CREATING BOOK FOR USER:", user_id)
+
+        if not user_id:
+            raise ValueError("user_id is missing from JWT token")
+
         data = book_data.model_dump()
-        data["publish_date"] = to_naive_utc(data["publish_date"])  # ← safety net
+
+        data["publish_date"] = to_naive_utc(data["publish_date"])
+
         data["user_id"] = user_id
+
         book = Books(**data)
+
         session.add(book)
         await session.commit()
         await session.refresh(book)
+
         return book
 
     async def update_book(self, book_id: UUID, book_data: BookUpdate, session: AsyncSession):
         book = await self.get_book(book_id, session)
+
         if not book:
             return None
+
         for key, value in book_data.model_dump(exclude_unset=True).items():
             if isinstance(value, datetime):
-                value = to_naive_utc(value)  
+                value = to_naive_utc(value)
             setattr(book, key, value)
+
         book.update_at = datetime.utcnow()
+
         session.add(book)
         await session.commit()
         await session.refresh(book)
+
         return book
 
     async def delete_book(self, book_id: UUID, session: AsyncSession):
         book = await self.get_book(book_id, session)
+
         if not book:
             return False
+
         await session.delete(book)
         await session.commit()
+
         return True

@@ -1,14 +1,21 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from uuid import UUID
+
 from .models import User
 from .schemas import UserCreate
-from .utils import generate_password_hash, verify_password
+from .utils import generate_password_hash
 
 
 class AuthService:
 
     async def get_user_by_email(self, email: str, session: AsyncSession):
         statement = select(User).where(User.email == email)
+        result = await session.exec(statement)
+        return result.first()
+
+    async def get_user_by_id(self, user_id: UUID, session: AsyncSession):
+        statement = select(User).where(User.uid == user_id)
         result = await session.exec(statement)
         return result.first()
 
@@ -26,15 +33,11 @@ class AuthService:
     async def create_user(self, user_data: UserCreate, session: AsyncSession):
         user_data_dict = user_data.model_dump()
 
-        # Hash password
         user_data_dict["password"] = generate_password_hash(
             user_data_dict["password"]
         )
 
-        # Create user FIRST
         new_user = User(**user_data_dict)
-
-        # Then assign role
         new_user.role = "user"
 
         session.add(new_user)
